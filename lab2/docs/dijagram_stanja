@@ -1,0 +1,3 @@
+# Dijagram stanja Lab2 projekta
+
+INIT -> SLEEP -> WAKEUP -> ACTIVE -> SLEEP
