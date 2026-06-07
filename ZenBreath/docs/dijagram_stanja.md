@@ -1,3 +1,10 @@
+# Dijagram Stanja Sustava – ZenBreath
+
+Ovaj dokument opisuje stanja sustava i uvjete prelaza unutar konačnog automata (FSM) ugradbene aplikacije ZenBreath.
+
+## 1. Grafički prikaz stanja (Mermaid format)
+
+```mermaid
 stateDiagram-v2
     [*] --> INICIJALIZACIJA : Uključenje / Reset
     
