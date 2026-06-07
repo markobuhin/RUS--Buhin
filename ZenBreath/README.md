@@ -36,9 +36,10 @@ Projekt je u potpunosti kompatibilan s **Wokwi** online simulatorom.
    - `Adafruit GFX Library`
 3. Pokrenite simulaciju klikom na gumb **Play**.
 4. Mišem pomičite klizač potenciometra kako biste simulirali jačinu izdisaja i promatrajte grafički biofeedback na OLED-u.
+5. Projekt se također može i otvoriti sa linka: https://wokwi.com/projects/465941218625482753
 
 ---
 
 ## 👥 Podjela posla u timu
-- **Student 1 (Jeff):** Implementacija FreeRTOS arhitekture, konfiguracija Wi-Fi pristupne točke i razvoj HTTP poslužitelja te AJAX nadzorne ploče.
-- **Student 2 (Partner):** Integracija I2C SSD1306 OLED zaslona, razvoj algoritma za numeričku integraciju volumena i implementacija Deep Sleep RTC strategije uštede energije.
+- **Student 1 (Buhin):** Implementacija FreeRTOS arhitekture, konfiguracija Wi-Fi pristupne točke i razvoj HTTP poslužitelja te AJAX nadzorne ploče.
+- **Student 2 (Klaić):** Integracija I2C SSD1306 OLED zaslona, razvoj algoritma za numeričku integraciju volumena i implementacija Deep Sleep RTC strategije uštede energije.
