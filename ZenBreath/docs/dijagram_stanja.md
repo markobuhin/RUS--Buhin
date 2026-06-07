@@ -1,10 +1,3 @@
-# Dijagram Stanja Sustava – ZenBreath
-
-Ovaj dokument opisuje stanja sustava i uvjete prelaza unutar konačnog automata (FSM) ugradbene aplikacije ZenBreath.
-
-## 1. Grafički prikaz stanja (Mermaid format)
-
-```mermaid
 stateDiagram-v2
     [*] --> INICIJALIZACIJA : Uključenje / Reset
     
@@ -14,9 +7,9 @@ stateDiagram-v2
     state STANJE_PRIPRAVNOSTI {
         [*] --> CekajDah
         CekajDah --> BrojiNeaktivnost : TrenutniProtok <= 8%
-        BrojiNeaktivnost --> DeepSleep : Neaktivnost > 30s
     }
     
+    STANJE_PRIPRAVNOSTI --> DEEP_SLEEP : Neaktivnost > 30s
     STANJE_PRIPRAVNOSTI --> AKTIVNO_TESTIRANJE : Detektiran izdisaj (Protok > 8%)
     
     state AKTIVNO_TESTIRANJE {
@@ -29,5 +22,5 @@ stateDiagram-v2
     
     PRIKAZ_IZVJESTAJA --> STANJE_PRIPRAVNOSTI : Istekao prikaz (6 sekundi)
     
-    DeepSleep --> INICIJALIZACIJA : Pritisak na Gumb (RTC Wake-up na GPIO 14)
+    DEEP_SLEEP --> INICIJALIZACIJA : Pritisak na Gumb (RTC Wake-up na GPIO 14)
     GRESKA_HARDVERA --> [*] : Beskonačna petlja
