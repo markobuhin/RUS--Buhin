@@ -6,7 +6,6 @@
 ---
 
 ## 🛠️ Tehničke Značajke i Kompleksnost
-Projekt je strukturiran tako da maksimizira ocjenu prema sveučilišnim kriterijima ugradbenih sustava:
 1. **Multithreading (FreeRTOS):** Sustav koristi rad u više dretvi na dvije jezge ESP32 čipa. Obrada senzora i grafika izvršavaju se na `Core 1`, dok se Wi-Fi i HTTP poslužitelj izvršavaju na `Core 0`, jamčeći rad u realnom vremenu.
 2. **Wi-Fi i Web Server:** ESP32 podiže vlastitu pristupnu točku (Access Point). Pacijent se može spojiti mobitelom i pratiti napredak uživo putem AJAX web sučelja.
 3. **Energetska Učinkovitost (Standby način rada):** Nakon 10 sekundi neaktivnosti, sustav gasi OLED zaslon i Wi-Fi perifernu jedinicu te prelazi u stanje mirovanja. Ponovno se aktivira pritiskom na gumb koji softverski reaktivira sve podsustave, čime se vjerno simulira stvarna logika uštede energije mikrokontrolera unutar simulacijskog okruženja.
