@@ -22,10 +22,8 @@ volatile bool isTesting = false;
 volatile bool testCompleted = false; 
 unsigned long lastActivityTime = 0;
 
-// Varijabla koja upravlja lažnim sleep stanjem
 bool sustavSpava = false;
 
-// HTML kod koji je falio:
 const char index_html[] PROGMEM = R"rawliteral(
 <!DOCTYPE html>
 <html>
@@ -81,7 +79,6 @@ void handleData() {
 
 void TaskServer(void * pvParameters) {
   for(;;) {
-    // Web poslužitelj radi samo ako sustav nije u stanju mirovanja
     if (!sustavSpava) {
       server.handleClient(); 
     }
@@ -92,8 +89,6 @@ void TaskServer(void * pvParameters) {
 void provjeriPotrosnjuEnergije() {
   if (millis() - lastActivityTime > 10000) {
     Serial.println("Sustav neaktivan. Ulazim u softverski sleep...");
-    
-    // Gašenje ekrana i mreže
     display.clearDisplay();
     display.display();
     WiFi.mode(WIFI_OFF);
@@ -125,10 +120,9 @@ void setup() {
 }
 
 void loop() {
-  // Ako je aktiviran lažni san, ovdje blokiramo izvršavanje svega ostalog
   if (sustavSpava) {
     if (digitalRead(WAKE_BUTTON_PIN) == LOW) {
-      delay(200); // Debounce stabilizacija gumba
+      delay(200); 
       
       Serial.println("Gumb pritisnut -> Budim sustav softverski!");
       
@@ -137,14 +131,12 @@ void loop() {
       display.println("Sustav probudjen!");
       display.display();
       delay(1500);
-      
-      // Ponovno paljenje mreže i reset vremena
       WiFi.softAP(ssid, "zenbreath123");
       lastActivityTime = millis();
       sustavSpava = false;
     }
     delay(50);
-    return; // Preskoči ostatak loop petlje dok god spava
+    return;
   }
 
   int rawValue = analogRead(SPIROMETER_PIN);
