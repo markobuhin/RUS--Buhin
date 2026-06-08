@@ -9,7 +9,7 @@
 Projekt je strukturiran tako da maksimizira ocjenu prema sveučilišnim kriterijima ugradbenih sustava:
 1. **Multithreading (FreeRTOS):** Sustav koristi rad u više dretvi na dvije jezge ESP32 čipa. Obrada senzora i grafika izvršavaju se na `Core 1`, dok se Wi-Fi i HTTP poslužitelj izvršavaju na `Core 0`, jamčeći rad u realnom vremenu.
 2. **Wi-Fi i Web Server:** ESP32 podiže vlastitu pristupnu točku (Access Point). Pacijent se može spojiti mobitelom i pratiti napredak uživo putem AJAX web sučelja.
-3. **Energetska Učinkovitost (Deep Sleep):** Nakon 30 sekundi neaktivnosti, periferija se gasi, a ESP32 odlazi u Deep Sleep. Budi se hardverski preko RTC GPIO pin-a.
+3. **Energetska Učinkovitost (Standby način rada):** Nakon 10 sekundi neaktivnosti, sustav gasi OLED zaslon i Wi-Fi perifernu jedinicu te prelazi u stanje mirovanja. Ponovno se aktivira pritiskom na gumb koji softverski reaktivira sve podsustave, čime se vjerno simulira stvarna logika uštede energije mikrokontrolera unutar simulacijskog okruženja.
 4. **I2C Sabirnica:** Pouzdana komunikacija sa SSD1306 OLED zaslonom visoke brzine osvježavanja.
 
 ---
@@ -42,4 +42,4 @@ Projekt je u potpunosti kompatibilan s **Wokwi** online simulatorom.
 
 ## 👥 Podjela posla u timu
 - **Student 1 (Buhin):** Implementacija FreeRTOS arhitekture, konfiguracija Wi-Fi pristupne točke i razvoj HTTP poslužitelja te AJAX nadzorne ploče.
-- **Student 2 (Klaić):** Integracija I2C SSD1306 OLED zaslona, razvoj algoritma za numeričku integraciju volumena i implementacija Deep Sleep RTC strategije uštede energije.
+- **Student 2 (Klaić):** Integracija I2C SSD1306 OLED zaslona, razvoj algoritma za numeričku integraciju volumena i implementacija Standby strategije uštede energije.
