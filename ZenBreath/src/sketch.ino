@@ -3,15 +3,15 @@
 #include <Adafruit_SSD1306.h>
 #include <WiFi.h>
 #include <WebServer.h>
+
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
 #define OLED_RESET    -1
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 #define SPIROMETER_PIN 34 
-#define WAKE_BUTTON_PIN 14 
+#define WAKE_BUTTON_PIN 14 // Pin prema tvom diagram.json
 
-// --- Wi-Fi i Web Server ---
 const char* ssid = "ZenBreath-Spirometer";
 WebServer server(80);
 volatile int currentFlow = 0;
@@ -19,9 +19,13 @@ volatile int maxFlow = 0;
 volatile float totalVolume = 0.0;
 unsigned long testStartTime = 0;
 volatile bool isTesting = false;
+volatile bool testCompleted = false; 
 unsigned long lastActivityTime = 0;
 
-// --- HTML i JavaScript za Web Sučelje (Biofeedback Dashboard) ---
+// Varijabla koja upravlja lažnim sleep stanjem
+bool sustavSpava = false;
+
+// HTML kod koji je falio:
 const char index_html[] PROGMEM = R"rawliteral(
 <!DOCTYPE html>
 <html>
@@ -37,8 +41,6 @@ const char index_html[] PROGMEM = R"rawliteral(
         h1 { color: #2c3e50; }
     </style>
     <script>
-        // Budući da ne koristimo web-sockete radi stabilnosti knjižnica, 
-        // JavaScript svakih 200ms traži osvježene podatke s ESP32 (AJAX tehnika)
         setInterval(function() {
             fetch('/data').then(response => response.text()).then(data => {
                 var values = data.split(',');
@@ -68,7 +70,6 @@ const char index_html[] PROGMEM = R"rawliteral(
 </html>
 )rawliteral";
 
-// Rute za Web Server
 void handleRoot() {
   server.send_P(200, "text/html", index_html);
 }
@@ -77,29 +78,37 @@ void handleData() {
   String data = String(currentFlow) + "," + String(maxFlow) + "," + String((int)totalVolume);
   server.send(200, "text/plain", data);
 }
+
 void TaskServer(void * pvParameters) {
   for(;;) {
-    server.handleClient(); // Procesuiraj zahtjeve s mobitela
-    vTaskDelay(10 / portTICK_PERIOD_MS); // Kratka pauza za stabilnost OS-a
+    // Web poslužitelj radi samo ako sustav nije u stanju mirovanja
+    if (!sustavSpava) {
+      server.handleClient(); 
+    }
+    vTaskDelay(10 / portTICK_PERIOD_MS); 
   }
 }
 
 void provjeriPotrosnjuEnergije() {
-  if (millis() - lastActivityTime > 30000) {
+  if (millis() - lastActivityTime > 10000) {
+    Serial.println("Sustav neaktivan. Ulazim u softverski sleep...");
+    
+    // Gašenje ekrana i mreže
     display.clearDisplay();
-    display.setCursor(0, 20);
-    display.println("Zzz... Deep Sleep");
     display.display();
-    delay(2000);
-    esp_sleep_enable_ext0_wakeup((gpio_num_t)WAKE_BUTTON_PIN, 0); 
-    esp_deep_sleep_start();
+    WiFi.mode(WIFI_OFF);
+    
+    sustavSpava = true;
   }
 }
 
 void setup() {
   Serial.begin(115200);
+  delay(500);
+  
   pinMode(WAKE_BUTTON_PIN, INPUT_PULLUP);
   lastActivityTime = millis();
+  
   if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { 
     Serial.println("OLED zakazao!"); 
     for(;;); 
@@ -107,33 +116,57 @@ void setup() {
   display.clearDisplay();
   display.setTextColor(SSD1306_WHITE);
   
-  if (esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_EXT0) {
-    display.setCursor(0,0);
-    display.println("ZenBreath Probudjen!");
-    display.display();
-    delay(2000);
-  }
   WiFi.softAP(ssid, "zenbreath123");
   server.on("/", handleRoot);
   server.on("/data", handleData);
   server.begin();
+  
   xTaskCreatePinnedToCore(TaskServer, "TaskServer", 4096, NULL, 1, NULL, 0);
 }
 
 void loop() {
+  // Ako je aktiviran lažni san, ovdje blokiramo izvršavanje svega ostalog
+  if (sustavSpava) {
+    if (digitalRead(WAKE_BUTTON_PIN) == LOW) {
+      delay(200); // Debounce stabilizacija gumba
+      
+      Serial.println("Gumb pritisnut -> Budim sustav softverski!");
+      
+      display.clearDisplay();
+      display.setCursor(0, 0);
+      display.println("Sustav probudjen!");
+      display.display();
+      delay(1500);
+      
+      // Ponovno paljenje mreže i reset vremena
+      WiFi.softAP(ssid, "zenbreath123");
+      lastActivityTime = millis();
+      sustavSpava = false;
+    }
+    delay(50);
+    return; // Preskoči ostatak loop petlje dok god spava
+  }
+
   int rawValue = analogRead(SPIROMETER_PIN);
   currentFlow = map(rawValue, 0, 4095, 0, 100); 
 
-  if (currentFlow > 8) {
-    lastActivityTime = millis();
+  if (currentFlow <= 8) {
+    testCompleted = false;
+  }
+
+  if (currentFlow > 8 && !testCompleted) {
+    lastActivityTime = millis(); 
+    
     if (!isTesting) {
       isTesting = true;
       testStartTime = millis();
       maxFlow = 0;
       totalVolume = 0;
     }
+    
     totalVolume += (currentFlow * 0.1) * 4.5; 
     if (currentFlow > maxFlow) maxFlow = currentFlow;
+    
     display.clearDisplay();
     display.setTextSize(1);
     display.setCursor(0, 0);
@@ -157,20 +190,33 @@ void loop() {
     display.print("Volumen: "); display.print((int)totalVolume); display.println(" mL");
     display.display();
 
-  } else {
-    // Kraj testa
-    if (isTesting && (millis() - testStartTime > 2000)) {
+    if (millis() - testStartTime > 6000) {
       isTesting = false;
+      testCompleted = true; 
       prikaziZavrsniIzvjestaj();
     }
 
-    // Prikaz u stanju čekanja
+  } else {
+    if (isTesting) {
+      isTesting = false;
+      testCompleted = true;
+      prikaziZavrsniIzvjestaj();
+    }
+
     display.clearDisplay();
-    display.setCursor(15, 10);
-    display.println("=== ZenBreath ===");
-    display.setCursor(0, 30);
-    display.println("Sustav spreman...");
-    display.println("Puhnite za pocetak.");
+    
+    if (testCompleted) {
+      display.setCursor(0, 20);
+      display.println("Test zavrsen.");
+      display.println("Vratite pot. na 0%");
+      display.println("kako bi sustav bio ready");
+    } else {
+      display.setCursor(15, 10);
+      display.println("=== ZenBreath ===");
+      display.setCursor(0, 30);
+      display.println("Sustav spreman...");
+      display.println("Puhnite za pocetak.");
+    }
     display.display();
     
     provjeriPotrosnjuEnergije();
@@ -187,7 +233,7 @@ void prikaziZavrsniIzvjestaj() {
   display.print("FVC Volumen:  "); display.print((int)totalVolume); display.println(" mL");
   
   display.setCursor(0, 40);
-  if (totalVolume > 2000) {
+  if (totalVolume > 1000) {
     display.println("Status: IZVRSNO!");
   } else {
     display.println("Status: Potrebna vjezba");
