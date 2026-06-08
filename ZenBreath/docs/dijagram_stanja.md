@@ -16,7 +16,7 @@ stateDiagram-v2
         CekajDah --> BrojiNeaktivnost : TrenutniProtok <= 8%
     }
     
-    STANJE_PRIPRAVNOSTI --> DEEP_SLEEP : Neaktivnost > 30s
+    STANJE_PRIPRAVNOSTI --> STANDBY : Neaktivnost > 10s
     STANJE_PRIPRAVNOSTI --> AKTIVNO_TESTIRANJE : Detektiran izdisaj (Protok > 8%)
     
     state AKTIVNO_TESTIRANJE {
@@ -29,5 +29,5 @@ stateDiagram-v2
     
     PRIKAZ_IZVJESTAJA --> STANJE_PRIPRAVNOSTI : Istekao prikaz (6 sekundi)
     
-    DEEP_SLEEP --> INICIJALIZACIJA : Pritisak na Gumb (RTC Wake-up na GPIO 14)
+    STANDBY --> STANJE_PRIPRAVNOSTI : Pritisak na Gumb (Reaktivacija na GPIO 14)
     GRESKA_HARDVERA --> [*] : Beskonačna petlja
