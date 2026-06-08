@@ -2,22 +2,18 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 #include <WiFi.h>
-#include <WebServer.h> // Standardna biblioteka, nema više fatal errora!
-
-// --- Konfiguracija hardvera ---
+#include <WebServer.h>
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
 #define OLED_RESET    -1
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
-#define SPIROMETER_PIN 34    // Analogni ulaz koji simulira senzor protoka
-#define WAKE_BUTTON_PIN 14   // Gumb za buđenje iz Deep Sleep-a (RTC GPIO)
+#define SPIROMETER_PIN 34 
+#define WAKE_BUTTON_PIN 14 
 
 // --- Wi-Fi i Web Server ---
 const char* ssid = "ZenBreath-Spirometer";
 WebServer server(80);
-
-// --- Globalne varijable za FreeRTOS dretve ---
 volatile int currentFlow = 0;
 volatile int maxFlow = 0;
 volatile float totalVolume = 0.0;
@@ -81,8 +77,6 @@ void handleData() {
   String data = String(currentFlow) + "," + String(maxFlow) + "," + String((int)totalVolume);
   server.send(200, "text/plain", data);
 }
-
-// --- FreeRTOS Zadatak 1: Upravljanje mrežnim zahtjevima (Core 0) ---
 void TaskServer(void * pvParameters) {
   for(;;) {
     server.handleClient(); // Procesuiraj zahtjeve s mobitela
@@ -90,16 +84,13 @@ void TaskServer(void * pvParameters) {
   }
 }
 
-// --- Funkcija za upravljanje uštedom energije ---
 void provjeriPotrosnjuEnergije() {
-  if (millis() - lastActivityTime > 30000) { // 30 sekundi potpunog mira
+  if (millis() - lastActivityTime > 30000) {
     display.clearDisplay();
     display.setCursor(0, 20);
     display.println("Zzz... Deep Sleep");
     display.display();
     delay(2000);
-    
-    // Postavljanje gumba na GPIO 14 kao okidača za buđenje
     esp_sleep_enable_ext0_wakeup((gpio_num_t)WAKE_BUTTON_PIN, 0); 
     esp_deep_sleep_start();
   }
@@ -109,8 +100,6 @@ void setup() {
   Serial.begin(115200);
   pinMode(WAKE_BUTTON_PIN, INPUT_PULLUP);
   lastActivityTime = millis();
-
-  // 1. Inicijalizacija I2C OLED-a
   if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { 
     Serial.println("OLED zakazao!"); 
     for(;;); 
@@ -124,25 +113,18 @@ void setup() {
     display.display();
     delay(2000);
   }
-
-  // 2. Pokretanje Wi-Fi softAP-a
   WiFi.softAP(ssid, "zenbreath123");
-  
-  // 3. Konfiguracija ruti servera
   server.on("/", handleRoot);
   server.on("/data", handleData);
   server.begin();
-
-  // 4. Pokretanje mrežnog zadatka na Core 0 preko FreeRTOS-a
   xTaskCreatePinnedToCore(TaskServer, "TaskServer", 4096, NULL, 1, NULL, 0);
 }
 
 void loop() {
-  // --- Ova petlja radi isključivo na Core 1 (Senzor i OLED grafika) ---
   int rawValue = analogRead(SPIROMETER_PIN);
   currentFlow = map(rawValue, 0, 4095, 0, 100); 
 
-  if (currentFlow > 8) { // Pacijent je počeo puhati
+  if (currentFlow > 8) {
     lastActivityTime = millis();
     if (!isTesting) {
       isTesting = true;
@@ -150,22 +132,16 @@ void loop() {
       maxFlow = 0;
       totalVolume = 0;
     }
-
-    // Numerička integracija za volumen (Složeni matematički algoritam)
     totalVolume += (currentFlow * 0.1) * 4.5; 
     if (currentFlow > maxFlow) maxFlow = currentFlow;
-
-    // --- BIOFEEDBACK GRAFIKA NA OLED-u ---
     display.clearDisplay();
     display.setTextSize(1);
     display.setCursor(0, 0);
     display.print("Protok: "); display.print(currentFlow); display.println(" %");
     
-    // Meta-zona (ciljani okvir disanja)
     display.drawRect(0, 14, 128, 12, SSD1306_WHITE);
     display.fillRect(40, 15, 40, 10, SSD1306_WHITE); 
     
-    // Pokazivač (kuglica)
     int markerX = map(currentFlow, 0, 100, 0, 124);
     display.fillCircle(markerX, 20, 4, SSD1306_WHITE);
 
@@ -200,7 +176,7 @@ void loop() {
     provjeriPotrosnjuEnergije();
   }
 
-  delay(100); // Uzorkovanje na 10Hz
+  delay(100);
 }
 
 void prikaziZavrsniIzvjestaj() {
