@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ZenBreath Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; background: #f0f4f8; color: #333; }
+        .container { max-width: 500px; margin: auto; padding: 20px; }
+        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .bar-container { background: #ddd; border-radius: 20px; height: 30px; width: 100%; overflow: hidden; }
+        .bar { background: #4caf50; height: 100%; width: 0%; transition: width 0.1s; }
+        h1 { color: #2c3e50; }
+    </style>
+    <script>
+        setInterval(function() {
+            fetch('/data').then(response => response.text()).then(data => {
+                var values = data.split(',');
+                document.getElementById('flowVal').innerText = values[0] + " %";
+                document.getElementById('flowBar').style.width = values[0] + "%";
+                document.getElementById('maxFlow').innerText = values[1];
+                document.getElementById('volume').innerText = values[2];
+            });
+        }, 200);
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>ZenBreath Pacijent Panel</h1>
+        <div class="card">
+            <h3>Trenutni Protok Zraka</h3>
+            <div class="bar-container"><div id="flowBar" class="bar"></div></div>
+            <h2 id="flowVal">0 %</h2>
+        </div>
+        <div class="card">
+            <h3>Statistika Testiranja</h3>
+            <p>Maksimalni protok: <strong id="maxFlow">0</strong> %</p>
+            <p>Volumen (FVC): <strong id="volume">0</strong> mL</p>
+        </div>
+    </div>
+</body>
+</html>
