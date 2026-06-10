@@ -10,7 +10,7 @@
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 #define SPIROMETER_PIN 34 
-#define WAKE_BUTTON_PIN 14 // Pin prema tvom diagram.json
+#define WAKE_BUTTON_PIN 14 
 
 const char* ssid = "ZenBreath-Spirometer";
 WebServer server(80);
